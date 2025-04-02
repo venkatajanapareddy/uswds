@@ -309,27 +309,20 @@ const hideToolTip = (tooltipBody) => {
 };
 
 /**
- * Setup the tooltip component
- * @param {HTMLElement} tooltipTrigger The element that creates the tooltip
+ * Creates a new tooltip wrapper and body elements
+ * @param {HTMLElement} tooltipTrigger - The trigger element
+ * @param {string} tooltipID - Unique ID for the tooltip
+ * @param {string} tooltipContent - Content to display in the tooltip
+ * @returns {Object} Object containing the wrapper and body elements
  */
-const setUpAttributes = (tooltipTrigger) => {
-  const tooltipID = `tooltip-${Math.floor(Math.random() * 900000) + 100000}`;
-  const tooltipContent = tooltipTrigger.getAttribute("title");
+const createTooltip = (tooltipTrigger, tooltipID, tooltipContent) => {
   const wrapper = document.createElement("span");
   const tooltipBody = document.createElement("span");
-  const additionalClasses = tooltipTrigger.getAttribute("data-classes");
-  let position = tooltipTrigger.getAttribute("data-position");
-
-  // Apply default position if not set as attribute
-  if (!position) {
-    position = "top";
-    tooltipTrigger.setAttribute("data-position", position);
-  }
+  const { "data-classes": additionalClasses } = tooltipTrigger.dataset;
 
   // Set up tooltip attributes
   tooltipTrigger.setAttribute("aria-describedby", tooltipID);
   tooltipTrigger.setAttribute("tabindex", "0");
-  tooltipTrigger.removeAttribute("title");
   tooltipTrigger.classList.remove(TOOLTIP_CLASS);
   tooltipTrigger.classList.add(TOOLTIP_TRIGGER_CLASS);
 
@@ -355,6 +348,64 @@ const setUpAttributes = (tooltipTrigger) => {
 
   // place the text in the tooltip
   tooltipBody.textContent = tooltipContent;
+
+  // Remove the title attribute to prevent default browser tooltip
+  tooltipTrigger.removeAttribute("title");
+
+  return { wrapper, tooltipBody };
+};
+
+/**
+ * Updates an existing tooltip with new content
+ * @param {HTMLElement} tooltipBody - The existing tooltip body element
+ * @param {string} tooltipContent - New content to display in the tooltip
+ */
+const updateTooltip = (tooltipBody, tooltipContent) => {
+  tooltipBody.textContent = tooltipContent;
+};
+
+/**
+ * Setup the tooltip component
+ * @param {HTMLElement} tooltipTrigger The element that creates the tooltip
+ */
+const setUpAttributes = (tooltipTrigger) => {
+  const tooltipID = `tooltip-${Math.floor(Math.random() * 900000) + 100000}`;
+  const tooltipContent = tooltipTrigger.getAttribute("title");
+
+  // Check if the trigger is already wrapped in a tooltip
+  const { parentNode } = tooltipTrigger;
+  const isTooltipSetup =
+    tooltipTrigger.parentNode &&
+    tooltipTrigger.parentNode.classList.contains(TOOLTIP_CLASS) &&
+    tooltipTrigger.parentNode.querySelector(`.${TOOLTIP_BODY_CLASS}`);
+
+  let wrapper;
+  let tooltipBody;
+
+  if (isTooltipSetup) {
+    // Use existing wrapper and tooltip body
+    wrapper = parentNode;
+    tooltipBody = wrapper.querySelector(`.${TOOLTIP_BODY_CLASS}`);
+    updateTooltip(tooltipBody, tooltipContent);
+  } else {
+    // Create new tooltip elements
+    ({ wrapper, tooltipBody } = createTooltip(
+      tooltipTrigger,
+      tooltipID,
+      tooltipContent,
+    ));
+  }
+
+  // Always remove the title attribute to prevent default browser tooltip
+  tooltipTrigger.removeAttribute("title");
+
+  let position = tooltipTrigger.getAttribute("data-position");
+
+  // Apply default position if not set as attribute
+  if (!position) {
+    position = "top";
+    tooltipTrigger.setAttribute("data-position", position);
+  }
 
   return { tooltipBody, position, tooltipContent, wrapper };
 };
@@ -387,14 +438,26 @@ const tooltip = behavior(
       },
       [TOOLTIP_TRIGGER](e) {
         const { trigger, body } = getTooltipElements(e.target);
-
         showToolTip(body, trigger, trigger.dataset.position);
+      },
+      [TOOLTIP_BODY_CLASS]() {
+        // Keep tooltip visible when hovering body
+      },
+    },
+    mouseout: {
+      [TOOLTIP_TRIGGER](e) {
+        const { body } = getTooltipElements(e.target);
+
+        // Only hide if we're not moving to the tooltip body
+        const { relatedTarget } = e;
+        if (!relatedTarget || !body.contains(relatedTarget)) {
+          hideToolTip(body);
+        }
       },
     },
     focusout: {
       [TOOLTIP_TRIGGER](e) {
         const { body } = getTooltipElements(e.target);
-
         hideToolTip(body);
       },
     },
