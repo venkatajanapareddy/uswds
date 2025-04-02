@@ -359,9 +359,12 @@ const createTooltip = (tooltipTrigger, tooltipID, tooltipContent) => {
  * Updates an existing tooltip with new content
  * @param {HTMLElement} tooltipBody - The existing tooltip body element
  * @param {string} tooltipContent - New content to display in the tooltip
+ * @returns {HTMLElement} The updated tooltip body element
  */
 const updateTooltip = (tooltipBody, tooltipContent) => {
-  tooltipBody.textContent = tooltipContent;
+  const updatedTooltip = tooltipBody;
+  updatedTooltip.textContent = tooltipContent;
+  return updatedTooltip;
 };
 
 /**
@@ -386,7 +389,7 @@ const setUpAttributes = (tooltipTrigger) => {
     // Use existing wrapper and tooltip body
     wrapper = parentNode;
     tooltipBody = wrapper.querySelector(`.${TOOLTIP_BODY_CLASS}`);
-    updateTooltip(tooltipBody, tooltipContent);
+    tooltipBody = updateTooltip(tooltipBody, tooltipContent);
   } else {
     // Create new tooltip elements
     ({ wrapper, tooltipBody } = createTooltip(
