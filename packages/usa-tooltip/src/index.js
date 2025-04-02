@@ -447,17 +447,6 @@ const tooltip = behavior(
         // Keep tooltip visible when hovering body
       },
     },
-    mouseout: {
-      [TOOLTIP_TRIGGER](e) {
-        const { body } = getTooltipElements(e.target);
-
-        // Only hide if we're not moving to the tooltip body
-        const { relatedTarget } = e;
-        if (!relatedTarget || !body.contains(relatedTarget)) {
-          hideToolTip(body);
-        }
-      },
-    },
     focusout: {
       [TOOLTIP_TRIGGER](e) {
         const { body } = getTooltipElements(e.target);
